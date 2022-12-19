@@ -4,14 +4,21 @@ use std::str::FromStr;
 use anyhow::{Error, Result};
 
 struct Round {
-    e: char,
-    s: char,
+    elf: char,
+    personal: char,
 }
+
+const A_ASCII_DIGIT: usize = 65;
+const X_ASCII_DIGIT: usize = 88;
 
 impl Round {
     fn get_score(&self) -> usize {
-        let shape_score = self.s as usize - 87;
-        let outcome_mod = ((((self.e as isize - 65) - (self.s as isize - 88)) % 3) + 3) % 3;
+        let shape_score = self.personal as usize - X_ASCII_DIGIT + 1;
+        let outcome_mod = ((((self.elf as isize - A_ASCII_DIGIT as isize)
+            - (self.personal as isize - X_ASCII_DIGIT as isize))
+            % 3)
+            + 3)
+            % 3;
         return match outcome_mod {
             0 => 3 + shape_score,
             1 => shape_score,
@@ -21,16 +28,18 @@ impl Round {
     }
 
     fn get_score_part_two(&self) -> usize {
-        let elf_offset = self.e as usize - 65;
-        let personal_shape = match self.s {
-            'X' => ((elf_offset + 2) % 3) + 88,
-            'Y' => elf_offset + 88,
-            'Z' => ((elf_offset + 1) % 3) + 88,
+        let elf_offset = self.elf as usize - A_ASCII_DIGIT;
+        let personal_shape = match self.personal {
+            'X' => ((elf_offset + 2) % 3) + X_ASCII_DIGIT,
+            'Y' => elf_offset + X_ASCII_DIGIT,
+            'Z' => ((elf_offset + 1) % 3) + X_ASCII_DIGIT,
             _ => unreachable!(),
         };
+
+        // Just reuse part 1 logic by converting the second column to what we should play
         return Round {
-            e: self.e,
-            s: char::from_u32(personal_shape as u32).unwrap(),
+            elf: self.elf,
+            personal: char::from_u32(personal_shape as u32).unwrap(),
         }
         .get_score();
     }
@@ -46,8 +55,8 @@ impl FromStr for Round {
         };
 
         return Ok(Round {
-            e: e.chars().next().unwrap(),
-            s: s.chars().next().unwrap(),
+            elf: e.chars().next().unwrap(),
+            personal: s.chars().next().unwrap(),
         });
     }
 }
