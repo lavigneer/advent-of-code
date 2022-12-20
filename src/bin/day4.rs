@@ -15,9 +15,7 @@ impl ElfPair {
 
     fn has_overlap(&self) -> bool {
         return (self.first.0 >= self.second.0 && self.first.0 <= self.second.1)
-            || (self.second.0 >= self.first.0 && self.second.0 <= self.first.1)
-            || (self.first.1 >= self.second.0 && self.first.1 <= self.second.1)
-            || (self.second.1 >= self.first.0 && self.second.1 <= self.first.1);
+            || (self.second.0 >= self.first.0 && self.second.0 <= self.first.1);
     }
 }
 
@@ -44,19 +42,14 @@ impl FromStr for ElfPair {
 fn main() -> Result<()> {
     let result = include_str!("./day4.prod")
         .lines()
-        .filter_map(|line| {
-            line.parse::<ElfPair>()
-                .unwrap()
-                .has_containment()
-                .then_some(1)
-        })
+        .filter(|line| line.parse::<ElfPair>().unwrap().has_containment())
         .count();
 
     println!("Part 1: {}", result);
 
     let result = include_str!("./day4.prod")
         .lines()
-        .filter_map(|line| line.parse::<ElfPair>().unwrap().has_overlap().then_some(1))
+        .filter(|line| line.parse::<ElfPair>().unwrap().has_overlap())
         .count();
 
     println!("Part 2: {}", result);
