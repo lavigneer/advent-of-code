@@ -1,4 +1,4 @@
-use std::{collections::VecDeque, str::FromStr};
+use std::{collections::VecDeque, fmt::Display, str::FromStr};
 
 /**
  * Goal: Use custom iterator to not have to track a counter variable
@@ -59,6 +59,43 @@ impl Iterator for Program {
     }
 }
 
+struct CRT {
+    pixels: [[Option<char>; 40]; 6],
+}
+
+impl CRT {
+    fn run_program(&mut self, program: Program) {
+        self.pixels[0][0] = Some('#');
+        program.enumerate().for_each(|(idx, register)| {
+            let idx = idx + 1;
+            if idx < 40 * 6 {
+                let row = idx / 40;
+                let col = idx % 40;
+                if register >= -1 && register <= 40 {
+                    self.pixels[row][col] = match register - col as isize {
+                        -1 | 0 | 1 => Some('#'),
+                        _ => Some('.'),
+                    }
+                } else {
+                    self.pixels[row][col] = Some('.');
+                }
+            }
+        })
+    }
+}
+
+impl Display for CRT {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        for row in self.pixels {
+            for pixel in row {
+                write!(f, "{}", pixel.unwrap())?;
+            }
+            write!(f, "\n")?;
+        }
+        return Ok(());
+    }
+}
+
 fn main() -> Result<()> {
     let instructions = include_str!("./day10.prod")
         .split("\n")
@@ -81,6 +118,23 @@ fn main() -> Result<()> {
         .sum();
 
     println!("Part 1: {}", signal);
+
+    let instructions = include_str!("./day10.prod")
+        .split("\n")
+        .flat_map(|line| line.parse::<Instruction>())
+        .collect();
+
+    let program = Program {
+        register: 1,
+        instructions,
+        current_instruction_cycles_run: 0,
+    };
+    let mut crt = CRT {
+        pixels: [[None; 40]; 6],
+    };
+    crt.run_program(program);
+
+    print!("Part 2: \n{}", crt);
 
     return Ok(());
 }
