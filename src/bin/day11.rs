@@ -1,24 +1,22 @@
-// GOAL: Try implementing a custom serde deserializer for parsing
-
 use anyhow::Result;
 use lazy_static::lazy_static;
 use regex::Regex;
-use std::{collections::VecDeque, num::ParseIntError, str::FromStr};
+use std::{collections::VecDeque, num::ParseFloatError, str::FromStr};
 
 #[derive(Debug)]
 struct ParseMonkeyError;
 
-impl From<ParseIntError> for ParseMonkeyError {
-    fn from(_value: ParseIntError) -> Self {
+impl From<ParseFloatError> for ParseMonkeyError {
+    fn from(_value: ParseFloatError) -> Self {
         return ParseMonkeyError;
     }
 }
 
 #[derive(Debug)]
 enum MonkeyOperation {
-    Add(usize),
+    Add(f64),
     AddSelf,
-    Multiply(usize),
+    Multiply(f64),
     MultiplySelf,
 }
 
@@ -32,8 +30,8 @@ impl FromStr for MonkeyOperation {
         match (other, operator) {
             ("old", "*") => Ok(MonkeyOperation::MultiplySelf),
             ("old", "+") => Ok(MonkeyOperation::AddSelf),
-            (_, "*") => Ok(MonkeyOperation::Multiply(other.parse::<usize>()?)),
-            (_, "+") => Ok(MonkeyOperation::Add(other.parse::<usize>()?)),
+            (_, "*") => Ok(MonkeyOperation::Multiply(other.parse::<f64>()?)),
+            (_, "+") => Ok(MonkeyOperation::Add(other.parse::<f64>()?)),
             _ => Err(ParseMonkeyError),
         }
     }
@@ -41,7 +39,7 @@ impl FromStr for MonkeyOperation {
 
 #[derive(Debug)]
 enum MonkeyTest {
-    DivisibleBy(usize),
+    DivisibleBy(f64),
 }
 
 impl FromStr for MonkeyTest {
@@ -53,7 +51,7 @@ impl FromStr for MonkeyTest {
                 .split_whitespace()
                 .last()
                 .ok_or(ParseMonkeyError)?
-                .parse::<usize>()?;
+                .parse::<f64>()?;
 
             return Ok(MonkeyTest::DivisibleBy(num));
         }
@@ -63,8 +61,7 @@ impl FromStr for MonkeyTest {
 
 #[derive(Debug)]
 struct Monkey {
-    id: usize,
-    items: VecDeque<usize>,
+    items: VecDeque<f64>,
     operation: MonkeyOperation,
     test: MonkeyTest,
     test_true_monkey: usize,
@@ -80,18 +77,11 @@ impl FromStr for Monkey {
             static ref MONKEY_LINE_RE: Regex = Regex::new(r"\d+").unwrap();
         }
         let mut lines = s.split("\n");
-        let monkey_line = lines.next().ok_or(ParseMonkeyError)?;
-        let monkey_id = MONKEY_LINE_RE
-            .find_iter(monkey_line)
-            .last()
-            .unwrap()
-            .as_str()
-            .parse::<usize>()
-            .unwrap();
+        lines.next();
         let starting_items_line = lines.next().ok_or(ParseMonkeyError)?;
         let starting_items = MONKEY_LINE_RE
             .find_iter(starting_items_line)
-            .flat_map(|item| item.as_str().parse::<usize>())
+            .flat_map(|item| item.as_str().parse::<f64>())
             .collect();
         let operation_line = lines.next().ok_or(ParseMonkeyError)?;
         let operation = operation_line.parse::<MonkeyOperation>()?;
@@ -114,7 +104,6 @@ impl FromStr for Monkey {
             .parse::<usize>()
             .unwrap();
         return Ok(Monkey {
-            id: monkey_id,
             items: starting_items,
             operation,
             test,
@@ -142,9 +131,9 @@ fn main() -> Result<()> {
                     MonkeyOperation::Add(num) => item + num,
                     MonkeyOperation::Multiply(num) => item * num,
                 };
-                let item = item / 3;
+                let item = (item / 3.0).floor();
                 let monkey_to_throw_to = match monkey.test {
-                    MonkeyTest::DivisibleBy(divisor) if item % divisor == 0 => {
+                    MonkeyTest::DivisibleBy(divisor) if item % divisor == 0.0 => {
                         monkey.test_true_monkey
                     }
                     _ => monkey.test_false_monkey,
@@ -157,13 +146,60 @@ fn main() -> Result<()> {
     }
 
     monkeys.sort_by_cached_key(|k| k.inspection_count);
-    let result = monkeys
+    let result: usize = monkeys
         .iter()
         .rev()
         .take(2)
-        .fold(1, |acc, m| acc * m.inspection_count);
+        .map(|m| m.inspection_count)
+        .product();
 
     println!("Part 1: {}", result);
 
+    let mut monkeys = include_str!("./day11.prod")
+        .split("\n\n")
+        .map(|line| line.parse::<Monkey>().unwrap())
+        .collect::<Vec<Monkey>>();
+
+    let mod_num: f64 = monkeys
+        .iter()
+        .map(|m| match m.test {
+            MonkeyTest::DivisibleBy(x) => x,
+        })
+        .product();
+
+    for _i in 0..10000 {
+        for i in 0..monkeys.len() {
+            while monkeys[i].items.len() > 0 {
+                let monkey = monkeys.get_mut(i).unwrap();
+                let item = monkey.items.pop_front().unwrap();
+                let item = match monkey.operation {
+                    MonkeyOperation::AddSelf => item + item,
+                    MonkeyOperation::MultiplySelf => item * item,
+                    MonkeyOperation::Add(num) => item + num,
+                    MonkeyOperation::Multiply(num) => item * num,
+                };
+                let item = item % mod_num;
+                let monkey_to_throw_to = match monkey.test {
+                    MonkeyTest::DivisibleBy(divisor) if item % divisor == 0.0 => {
+                        monkey.test_true_monkey
+                    }
+                    _ => monkey.test_false_monkey,
+                };
+                monkey.inspection_count += 1;
+                let other_monkey = monkeys.get_mut(monkey_to_throw_to).unwrap();
+                other_monkey.items.push_back(item);
+            }
+        }
+    }
+
+    monkeys.sort_by_cached_key(|k| k.inspection_count);
+    let result: usize = monkeys
+        .iter()
+        .rev()
+        .take(2)
+        .map(|m| m.inspection_count)
+        .product();
+
+    println!("Part 2: {}", result);
     return Ok(());
 }
