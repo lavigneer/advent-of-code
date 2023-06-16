@@ -20,9 +20,9 @@ impl FromStr for Instruction {
         match s {
             "noop" => Ok(Instruction::Noop),
             _ => {
-                let (_, x) = s.split_once(" ").ok_or(ParseInstructionError)?;
+                let (_, x) = s.split_once(' ').ok_or(ParseInstructionError)?;
                 let parsed_num = x.parse::<isize>().map_err(|_| ParseInstructionError)?;
-                return Ok(Instruction::Addx(parsed_num));
+                Ok(Instruction::Addx(parsed_num))
             }
         }
     }
@@ -55,7 +55,7 @@ impl Iterator for Program {
             _ => unreachable!("OOPS"),
         }
 
-        return Some(self.register);
+        Some(self.register)
     }
 }
 
