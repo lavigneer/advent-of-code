@@ -76,5 +76,16 @@ fn main() -> Result<()> {
         .filter(|size| **size <= 100000)
         .sum::<usize>();
     println!("Part 1: {}", total_size);
+
+    let unused_space = 70000000 - sizes.get("/").unwrap_or(&0usize);
+    let needs_space = 30000000 - unused_space;
+
+    let smalled_free_size = sizes
+        .values()
+        .filter(|size| **size >= needs_space)
+        .min()
+        .unwrap();
+    println!("Part 2: {}", *smalled_free_size);
+
     Ok(())
 }
