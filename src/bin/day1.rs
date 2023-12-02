@@ -44,3 +44,4 @@ fn main() {
         .fold(0, |acc, n| acc + n);
     println!("Part 2: {}", result);
 }
+
