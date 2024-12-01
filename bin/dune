@@ -1,4 +1,5 @@
 (executable
  (public_name day1)
  (name day1)
- (libraries adventofcode))
+ (libraries str adventofcode))
+

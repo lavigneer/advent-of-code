@@ -30,6 +30,7 @@
             pkgs.opam
             pkgs.dune_3
             pkgs.kind
+            pkgs.ocamlPackages.utop
           ];
         };
       }
